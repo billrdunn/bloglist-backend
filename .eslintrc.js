@@ -3,11 +3,16 @@ module.exports = {
     commonjs: true,
     es2021: true,
     node: true,
+    jest: true
   },
   // extends: 'airbnb',
   // parserOptions: {
   //   ecmaVersion: 13,
   // },
+  extends: 'eslint::recommended',
+  parserOptions: {
+    ecmaVersion: 13,
+  },
   rules: {
     indent: [
       'error',
