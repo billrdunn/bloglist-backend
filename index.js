@@ -1,19 +1,10 @@
+const app = require('./app') // the actual Expess application
 const http = require('http')
-const express = require('express')
-const app = express()
-const cors = require('cors')
-const blogsRouter = require('./controllers/blogs')
-const mongoose = require('mongoose')
+const config = require('./utils/config')
+const logger = require('./utils/logger')
 
-const mongoUrl = 'mongodb+srv://billrdunn:qRQtxvHgePSHlax9@bloglistdb.fnmor.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
-mongoose.connect(mongoUrl)
+const server = http.createServer(app)
 
-app.use(cors())
-app.use(express.json())
-
-app.use('/api/blogs', blogsRouter)
-
-const PORT = 3003
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+server.listen(config.PORT, () => {
+  logger.info(`Sever running on port ${config.PORT}`)
 })
