@@ -1,4 +1,5 @@
 const blogsRouter = require('express').Router()
+const { response } = require('express')
 const Blog = require('../models/blog')
 
 blogsRouter.get('/', async (request, response) => {
@@ -52,6 +53,24 @@ blogsRouter.get('/:id', async (request, response, next) => {
 blogsRouter.delete('/:id', async (request, response, next) => {
   await Blog.findByIdAndRemove(request.params.id)
   response.status(204).end()
+})
+
+blogsRouter.put('/:id', async (request, response, next) => {
+  const { body } = request
+
+  const blog = {
+    title: body.title,
+    author: body.author,
+    url: body.url,
+    likes: body.likes
+  }
+
+  console.log('blog :>> ', blog);
+
+  // { new: true } is required so that the event handler is called with
+  // the new modified document instead of the original
+  const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, blog, { new: true })
+  response.json(updatedBlog)
 })
 
 module.exports = blogsRouter

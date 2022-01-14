@@ -5,6 +5,7 @@ const app = require('../app');
 const Blog = require('../models/blog');
 const blog = require('../models/blog');
 const res = require('express/lib/response');
+const blogsRouter = require('../controllers/blogs');
 
 
 beforeEach(async () => {
@@ -168,6 +169,29 @@ test('if a blog is posted with no title or url the response is status 400', asyn
     .expect(400)
 })
 
+test('a blog can be updated to have a new number of likes', async () => {
+  const blogsAtStart = await helper.blogsInDb()
+  
+  const newBlog = {
+    title: blogsAtStart[0].title,
+    author: blogsAtStart[0].author,
+    url: blogsAtStart[0].url,
+    likes: blogsAtStart[0].likes + 1,
+    id: blogsAtStart[0].id
+  }
+
+  console.log('newBlog :>> ', newBlog);
+
+  await api
+    .put(`/api/blogs/${newBlog.id}`)
+    .send(newBlog)
+    .expect(200)
+
+  const blogsAtEnd = await helper.blogsInDb()
+
+  expect(blogsAtEnd[0].likes).toEqual(blogsAtStart[0].likes + 1)
+
+})
 
 afterAll(() => {
   mongoose.connection.close()
