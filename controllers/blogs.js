@@ -6,7 +6,7 @@ const User = require('../models/user')
 blogsRouter.get('/', async (request, response) => {
 
   // Note difference between async/await syntax...
-  const blogs = await Blog.find({}).populate('user', {username : 1, blogs: 1})
+  const blogs = await Blog.find({}).populate('user', {username : 1, name: 1})
   response.json(blogs)
 
   // ... and using 'then':
@@ -20,8 +20,14 @@ blogsRouter.get('/', async (request, response) => {
 blogsRouter.post('/', async (request, response, next) => {
   
   const body = request.body
-  
-  const user = await User.findById(body.userId)
+
+  let user
+  if (body.userId) {
+    user = await User.findById(body.userId)
+  } else {
+    user = await User.find({})
+    user = user[0]
+  }
   
   const blog = new Blog({
     title: body.title,

@@ -17,7 +17,7 @@ const unknownEndpoint = (request, response) => {
 // Express error handlers are middleware that are defined with a function
 // that accepts four parameters
 const errorHandler = (error, request, response, next) => {
-  // TIP: when dealing with promises, always add error and exception handling
+  // TIP: when dealing with promises, always add error and exception handling 
   // and print the object that caused the exception to the console
   logger.error('Error!', error.message)
 
