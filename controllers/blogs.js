@@ -1,11 +1,12 @@
 const blogsRouter = require('express').Router()
 const { response } = require('express')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 blogsRouter.get('/', async (request, response) => {
 
   // Note difference between async/await syntax...
-  const blogs = await Blog.find({})
+  const blogs = await Blog.find({}).populate('user', {username : 1, blogs: 1})
   response.json(blogs)
 
   // ... and using 'then':
@@ -17,28 +18,28 @@ blogsRouter.get('/', async (request, response) => {
 })
 
 blogsRouter.post('/', async (request, response, next) => {
-
-  const blog = new Blog(request.body)
-
+  
+  const body = request.body
+  
+  const user = await User.findById(body.userId)
+  
+  const blog = new Blog({
+    title: body.title,
+    author: body.author,
+    url: body.url,
+    likes: body.likes,
+    user: user._id
+  })
+  
   if (!blog.title && !blog.url) {
     response.status(400).end()
   }
 
-  const result = await blog.save()
-  response.status(201).json(result)
-
-  // Note that because of the express-async-errors library
-  // which eliminates the need for try/catch and next,
-  // what is actually being performed under the hood is this:
-
-  // try {
-  //   const blog = new Blog(request.body)
-  //   const result = await blog.save()
-  //   response.status(201).json(result)
-  // }
-  // catch (error) {
-  //   next(error)
-  // }
+  const savedBlog = await blog.save()
+  user.blogs = user.blogs.concat(savedBlog._id)
+  await user.save()
+  
+  response.json(savedBlog)
 })
 
 blogsRouter.get('/:id', async (request, response, next) => {
@@ -64,8 +65,6 @@ blogsRouter.put('/:id', async (request, response, next) => {
     url: body.url,
     likes: body.likes
   }
-
-  console.log('blog :>> ', blog);
 
   // { new: true } is required so that the event handler is called with
   // the new modified document instead of the original

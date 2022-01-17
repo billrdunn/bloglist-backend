@@ -12,18 +12,19 @@
   "author": "William Dunn",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
     "dotenv": "^11.0.0",
     "express": "^4.17.2",
     "express-async-errors": "^3.1.1",
     "lodash": "^4.17.21",
-    "mongoose": "^6.1.6",
-    "mongoose-unique-validator": "^3.0.0",
+    "mongoose": "^5.10.7",
+    "mongoose-unique-validator": "^2.0.3",
     "morgan": "^1.10.0",
     "yarn": "^1.22.17"
   },
   "devDependencies": {
-    "eslint": "^8.6.0",
+    "eslint": "^8.7.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-jsx-a11y": "^6.5.1",

@@ -1,43 +1,30 @@
 module.exports = {
-  env: {
-    commonjs: true,
-    es2021: true,
-    node: true,
-    jest: true
+  'env': {
+    'commonjs': true,
+    'es2021': true,
+    'node': true
   },
-  // extends: 'airbnb',
-  // parserOptions: {
-  //   ecmaVersion: 13,
-  // },
-  extends: 'eslint::recommended',
-  parserOptions: {
-    ecmaVersion: 13,
+  'extends': 'eslint:recommended',
+  'parserOptions': {
+    'ecmaVersion': 12
   },
-  rules: {
-    indent: [
+  'rules': {
+    'indent': [
       'error',
-      2,
+      2
     ],
     'linebreak-style': [
       'error',
-      'unix',
+      'unix'
     ],
-    quotes: [
+    'quotes': [
       'error',
-      'single',
+      'single'
     ],
-    semi: [
+    'semi': [
       'error',
-      'never',
-    ],
-    eqeqeq: 'error',
-    'no-trailing-spaces': 'error',
-    'object-curly-spacing': [
-      'error', 'always',
-    ],
-    'arrow-spacing': [
-      'error', { before: true, after: true },
+      'never'
     ],
     'no-console': 0,
-  },
+  }
 }

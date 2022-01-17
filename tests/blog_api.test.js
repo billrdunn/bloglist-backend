@@ -1,11 +1,10 @@
 const supertest = require('supertest')
 const mongoose = require('mongoose')
 const helper = require('./test_helper')
-const app = require('../app');
-const Blog = require('../models/blog');
-const blog = require('../models/blog');
-const res = require('express/lib/response');
-const blogsRouter = require('../controllers/blogs');
+const app = require('../app')
+const Blog = require('../models/blog')
+const bcrypt = require('bcrypt')
+const User = require('../models/user')
 
 
 beforeEach(async () => {
@@ -14,7 +13,7 @@ beforeEach(async () => {
   await Blog.deleteMany({})
 
   // Create an array of new (Mongoose) blog objects
-  const blogObjects = helper.initialBlogs
+  const blogObjects = await helper.initialBlogs
     .map(blog => new Blog(blog))
 
   // Create an array of promises
@@ -61,16 +60,20 @@ test('a specific blog title is within the returned blogs', async () => {
 })
 
 test('a valid blog can be added', async () => {
+
+  const users = await helper.usersInDb()
+
   const newBlog = {
     title: 'new blog',
     author: 'new author',
     url: 'new url',
-    likes: 1
+    likes: 1,
+    userId: users[0].id
   }
   await api
     .post('/api/blogs')
     .send(newBlog)
-    .expect(201)
+    .expect(200)
     .expect('Content-Type', /application\/json/)
 
   const blogsAtEnd = await helper.blogsInDb()
@@ -83,11 +86,15 @@ test('a valid blog can be added', async () => {
 })
 
 test('a blog with no title is not added', async () => {
+  const users = await helper.usersInDb()
+
   const newBlog = {
     author: 'new author',
     url: 'new url',
-    likes: 1
+    likes: 1,
+    userId: users[0].id
   }
+
   await api
     .post('/api/blogs')
     .send(newBlog)
@@ -137,15 +144,18 @@ test('verify that blogs contain an id parameter', async () => {
 })
 
 test('if a blog is added with the likes property missing, it will default to zero', async () => {
+  const users = await helper.usersInDb()
+
   const newBlog = {
     title: 'new blog',
     author: 'new author',
-    url: 'new url'
+    url: 'new url',
+    userId: users[0].id
   }
   await api
     .post('/api/blogs')
     .send(newBlog)
-    .expect(201)
+    .expect(200)
     .expect('Content-Type', /application\/json/)
 
   const blogsAtEnd = await helper.blogsInDb()
@@ -159,9 +169,12 @@ test('if a blog is added with the likes property missing, it will default to zer
 })
 
 test('if a blog is posted with no title or url the response is status 400', async () => {
+  const users = await helper.usersInDb()
+
   const newBlog = {
     author: 'new author',
-    likes: 20
+    likes: 23,
+    userId: users[0].id
   }
   await api
     .post('/api/blogs')
@@ -180,8 +193,6 @@ test('a blog can be updated to have a new number of likes', async () => {
     id: blogsAtStart[0].id
   }
 
-  console.log('newBlog :>> ', newBlog);
-
   await api
     .put(`/api/blogs/${newBlog.id}`)
     .send(newBlog)
@@ -191,6 +202,60 @@ test('a blog can be updated to have a new number of likes', async () => {
 
   expect(blogsAtEnd[0].likes).toEqual(blogsAtStart[0].likes + 1)
 
+})
+
+describe('when there is initially one user in db', () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash('sekret', 10)
+    const user = new User({ username: 'root', passwordHash })
+
+    await user.save()
+  })
+
+  test('creation succeeds with a fresh username', async () => {
+    const usersAtStart = await helper.usersInDb()
+
+    const newUser = {
+      username: 'mluukkai',
+      name: 'Matti Luukkainen',
+      password: 'salainen',
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    const usersAtEnd = await helper.usersInDb()
+    expect(usersAtEnd).toHaveLength(usersAtStart.length + 1)
+
+    const usernames = usersAtEnd.map(u => u.username)
+    expect(usernames).toContain(newUser.username)
+  })
+  
+  test('creation fails with proper statuscode and message if username already taken', async () => {
+    const usersAtStart = await helper.usersInDb()
+
+    const newUser = {
+      username: 'root',
+      name: 'Superuser',
+      password: 'salainen',
+    }
+
+    const result = await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+
+    expect(result.body.error).toContain('`username` to be unique')
+
+    const usersAtEnd = await helper.usersInDb()
+    expect(usersAtEnd).toHaveLength(usersAtStart.length)
+  })
 })
 
 afterAll(() => {
