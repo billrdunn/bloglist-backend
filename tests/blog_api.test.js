@@ -8,10 +8,11 @@ const bcrypt = require('bcrypt')
 const User = require('../models/user')
 
 
-beforeEach(async () => {
-
+beforeEach(async () => { 
   // Remove all blogs
   await Blog.deleteMany({})
+  const users = await helper.usersInDb()
+  helper.initialBlogs[0].user = users[0].id
 
   // Create an array of new (Mongoose) blog objects
   const blogObjects = await helper.initialBlogs
@@ -30,6 +31,7 @@ beforeEach(async () => {
   // Note Promise.all executes in parallel, so the promises may not be
   // executed in order. Using a "for... of" block instead 
   // will guarantee specific execution order.
+
 })
 
 // Wrap the imported application with the supertest function
@@ -81,19 +83,6 @@ describe('Adding new blog(s):', () => {
   })
 
   test('a blog with no title is not added', async () => {
-    const credentials = {
-      username: 'root',
-      password: 'sekret'
-    }
-  
-    const response = await api
-      .post('/api/login')
-      .send(credentials)
-      .expect(200)
-      .expect('Content-Type', /application\/json/)
-  
-    const token = response.body.token
-    const users = await helper.usersInDb()
   
     const newBlog = {
       author: 'new author',
@@ -115,19 +104,6 @@ describe('Adding new blog(s):', () => {
   })
 
   test('if a blog is added with the likes property missing, it will default to zero', async () => {
-    const credentials = {
-      username: 'root',
-      password: 'sekret'
-    }
-  
-    const response = await api
-      .post('/api/login')
-      .send(credentials)
-      .expect(200)
-      .expect('Content-Type', /application\/json/)
-  
-    const token = response.body.token
-    const users = await helper.usersInDb()
   
     const newBlog = {
       title: 'new blog',
@@ -192,22 +168,36 @@ test('a specific blog can be viewed', async () => {
   expect(resultBlog.body).toEqual(processedBlogToView)
 })
 
-test('a blog can be deleted', async () => {
-  const blogsAtStart = await helper.blogsInDb()
-  const blogToDelete = blogsAtStart[0]
+test('a blog can be deleted', async () => { 
 
-  await api
-    .delete(`/api/blogs/${blogToDelete.id}`)
+  const credentials = {
+    username: 'root',
+    password: 'sekret'
+  }
+
+  const response = await api
+    .post('/api/login')
+    .send(credentials)
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+  
+  const blogsAtStart = await helper.blogsInDb()
+  
+  const token = response.body.token 
+
+  await agent
+    .set('Authorization', `bearer ${token}`)
+    .delete(`/api/blogs/${blogsAtStart[0].id}`)
     .expect(204)
   const blogsAtEnd = await helper.blogsInDb()
 
   expect(blogsAtEnd).toHaveLength(
-    helper.initialBlogs.length - 1
+    blogsAtStart.length - 1
   )
 
   const titles = blogsAtEnd.map(r => r.title)
 
-  expect(titles).not.toContain(blogToDelete.title)
+  expect(titles).not.toContain(blogsAtStart[0].title)
 })
 
 test('verify that blogs contain an id parameter', async () => {
