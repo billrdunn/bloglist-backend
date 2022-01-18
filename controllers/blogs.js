@@ -17,18 +17,10 @@ blogsRouter.get('/', async (request, response) => {
   //   })
 })
 
-const getTokenFrom = request => {
-  const authorisation = request.get('authorization')
-  if (authorisation && authorisation.toLowerCase().startsWith('bearer ')) {
-    return authorisation.substring(7)
-  }
-  return null
-}
-
 blogsRouter.post('/', async (request, response, next) => {
   
   const body = request.body
-  const token = getTokenFrom(request)
+  const token = request.token
   if (!token) {
     return response.status(401).json({error: 'token is null'})
   }
