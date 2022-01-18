@@ -2,6 +2,7 @@ const supertest = require('supertest')
 const mongoose = require('mongoose')
 const helper = require('./test_helper')
 const app = require('../app')
+const agent = supertest.agent(app)
 const Blog = require('../models/blog')
 const bcrypt = require('bcrypt')
 const User = require('../models/user')
@@ -35,11 +36,129 @@ beforeEach(async () => {
 // to make a superagent object
 const api = supertest(app)
 
+describe('Adding new blog(s):', () => {
+  let token, users
+
+  beforeEach(async () => {
+    const credentials = {
+      username: 'root',
+      password: 'sekret'
+    }
+
+    const response = await api
+      .post('/api/login')
+      .send(credentials)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    token = response.body.token
+    users = await helper.usersInDb()
+  })
+    
+  test('a valid blog can be added', async () => {
+
+    const newBlog = {
+      title: 'new blog',
+      author: 'new author',
+      url: 'new url',
+      likes: 1,
+      userId: users[0].id
+    }
+    await agent
+      .set('Authorization', `bearer ${token}`)
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
+
+    const titles = blogsAtEnd.map(r => r.title)
+
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
+    expect(titles).toContain('new blog')
+  })
+
+  test('a blog with no title is not added', async () => {
+    const credentials = {
+      username: 'root',
+      password: 'sekret'
+    }
+  
+    const response = await api
+      .post('/api/login')
+      .send(credentials)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+  
+    const token = response.body.token
+    const users = await helper.usersInDb()
+  
+    const newBlog = {
+      author: 'new author',
+      url: 'new url',
+      likes: 1,
+      userId: users[0].id
+    }
+  
+    await agent
+      .set('Authorization', `bearer ${token}`)
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+  
+    const blogsAtEnd = await helper.blogsInDb()
+  
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
+  })
+
+  test('if a blog is added with the likes property missing, it will default to zero', async () => {
+    const credentials = {
+      username: 'root',
+      password: 'sekret'
+    }
+  
+    const response = await api
+      .post('/api/login')
+      .send(credentials)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+  
+    const token = response.body.token
+    const users = await helper.usersInDb()
+  
+    const newBlog = {
+      title: 'new blog',
+      author: 'new author',
+      url: 'new url',
+      userId: users[0].id
+    }
+  
+    await agent
+      .set('Authorization', `bearer ${token}`)
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+  
+    const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
+  
+    const titles = blogsAtEnd.map(r => r.title)
+    expect(titles).toContain('new blog')
+  
+    const addedBlog = blogsAtEnd.find(blog => blog.title === 'new blog')
+    expect(addedBlog.likes).toEqual(0)
+  })
+})
+
 test('blogs are returned as json', async () => {
   await api
-    // make HTTP GET request
+  // make HTTP GET request
     .get('/api/blogs')
-    // expect status code 200
+  // expect status code 200
     .expect(200)
     .expect('Content-Type', /application\/json/)
 })
@@ -57,53 +176,6 @@ test('a specific blog title is within the returned blogs', async () => {
   const titles = response.body.map(r => r.title)
 
   expect(titles).toContain('This is a blog title')
-})
-
-test('a valid blog can be added', async () => {
-
-  const users = await helper.usersInDb()
-
-  const newBlog = {
-    title: 'new blog',
-    author: 'new author',
-    url: 'new url',
-    likes: 1,
-    userId: users[0].id
-  }
-  await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
-
-  const blogsAtEnd = await helper.blogsInDb()
-  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
-
-  const titles = blogsAtEnd.map(r => r.title)
-
-  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
-  expect(titles).toContain('new blog')
-})
-
-test('a blog with no title is not added', async () => {
-  const users = await helper.usersInDb()
-
-  const newBlog = {
-    author: 'new author',
-    url: 'new url',
-    likes: 1,
-    userId: users[0].id
-  }
-
-  await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(400)
-    .expect('Content-Type', /application\/json/)
-
-  const blogsAtEnd = await helper.blogsInDb()
-
-  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
 })
 
 test('a specific blog can be viewed', async () => {
@@ -143,32 +215,19 @@ test('verify that blogs contain an id parameter', async () => {
   expect(response.body[0].id).toBeDefined()
 })
 
-test('if a blog is added with the likes property missing, it will default to zero', async () => {
-  const users = await helper.usersInDb()
-
-  const newBlog = {
-    title: 'new blog',
-    author: 'new author',
-    url: 'new url',
-    userId: users[0].id
+test('if a blog is posted with no title or url the response is status 400', async () => {
+  const credentials = {
+    username: 'root',
+    password: 'sekret'
   }
-  await api
-    .post('/api/blogs')
-    .send(newBlog)
+
+  const response = await api
+    .post('/api/login')
+    .send(credentials)
     .expect(200)
     .expect('Content-Type', /application\/json/)
 
-  const blogsAtEnd = await helper.blogsInDb()
-  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
-
-  const titles = blogsAtEnd.map(r => r.title)
-  expect(titles).toContain('new blog')
-
-  const addedBlog = blogsAtEnd.find(blog => blog.title === 'new blog')
-  expect(addedBlog.likes).toEqual(0)
-})
-
-test('if a blog is posted with no title or url the response is status 400', async () => {
+  const token = response.body.token
   const users = await helper.usersInDb()
 
   const newBlog = {
@@ -176,7 +235,8 @@ test('if a blog is posted with no title or url the response is status 400', asyn
     likes: 23,
     userId: users[0].id
   }
-  await api
+  await agent
+    .set('Authorization', `bearer ${token}`)
     .post('/api/blogs')
     .send(newBlog)
     .expect(400)
@@ -184,7 +244,7 @@ test('if a blog is posted with no title or url the response is status 400', asyn
 
 test('a blog can be updated to have a new number of likes', async () => {
   const blogsAtStart = await helper.blogsInDb()
-  
+
   const newBlog = {
     title: blogsAtStart[0].title,
     author: blogsAtStart[0].author,
@@ -235,7 +295,7 @@ describe('when there is initially one user in db', () => {
     const usernames = usersAtEnd.map(u => u.username)
     expect(usernames).toContain(newUser.username)
   })
-  
+
   test('creation fails with proper statuscode and message if username already taken', async () => {
     const usersAtStart = await helper.usersInDb()
 
@@ -292,7 +352,7 @@ describe('when there is initially one user in db', () => {
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
-    expect(result.body.error).toContain('password too short')
+    expect(result.body.error).toContain('password must be minimum 3 characters')
     const usersAtEnd = await helper.usersInDb()
     expect(usersAtEnd).toHaveLength(usersAtStart.length)
   })

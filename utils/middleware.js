@@ -20,16 +20,15 @@ const errorHandler = (error, request, response, next) => {
   // TIP: when dealing with promises, always add error and exception handling 
   // and print the object that caused the exception to the console
   logger.error('Error!', error.message)
-
-  if (error.message === 'password must be minimum 3 characters') {
-    return response.status(400).send({error: 'password too short'})
-  }
   
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
   }
   if (error.name === 'ValidationError') {
     return response.status(400).send({ error: error.message })
+  }
+  if (error.name === 'JsonWebTokenError') {
+    return response.status(401).send({ error: 'invalid token' })
   }
   
   next(error)
