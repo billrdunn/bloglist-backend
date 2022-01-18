@@ -74,12 +74,33 @@ describe('Adding new blog(s):', () => {
       .expect('Content-Type', /application\/json/)
 
     const blogsAtEnd = await helper.blogsInDb()
-    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
-
     const titles = blogsAtEnd.map(r => r.title)
 
     expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
     expect(titles).toContain('new blog')
+  })
+
+  test('adding a blog fails properly if a token is not provided', async () => {
+    
+    token = null
+
+    const newBlog = {
+      title: 'new blog',
+      author: 'new author',
+      url: 'new url',
+      likes: 1,
+      userId: users[0].id
+    }
+    await agent
+      .set('Authorization', `bearer ${token}`)
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDb()
+
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
   })
 
   test('a blog with no title is not added', async () => {
