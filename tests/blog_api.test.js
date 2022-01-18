@@ -2,7 +2,6 @@ const supertest = require('supertest')
 const mongoose = require('mongoose')
 const helper = require('./test_helper')
 const app = require('../app')
-const agent = supertest.agent(app)
 const Blog = require('../models/blog')
 const bcrypt = require('bcrypt')
 const User = require('../models/user')
@@ -66,9 +65,9 @@ describe('Adding new blog(s):', () => {
       likes: 1,
       userId: users[0].id
     }
-    await agent
-      .set('Authorization', `bearer ${token}`)
+    await api
       .post('/api/blogs')
+      .set('Authorization', `bearer ${token}`)
       .send(newBlog)
       .expect(200)
       .expect('Content-Type', /application\/json/)
@@ -91,9 +90,9 @@ describe('Adding new blog(s):', () => {
       likes: 1,
       userId: users[0].id
     }
-    await agent
-      .set('Authorization', `bearer ${token}`)
+    await api
       .post('/api/blogs')
+      .set('Authorization', `bearer ${token}`)
       .send(newBlog)
       .expect(401)
       .expect('Content-Type', /application\/json/)
@@ -112,9 +111,9 @@ describe('Adding new blog(s):', () => {
       userId: users[0].id
     }
   
-    await agent
-      .set('Authorization', `bearer ${token}`)
+    await api
       .post('/api/blogs')
+      .set('Authorization', `bearer ${token}`)
       .send(newBlog)
       .expect(400)
       .expect('Content-Type', /application\/json/)
@@ -133,9 +132,9 @@ describe('Adding new blog(s):', () => {
       userId: users[0].id
     }
   
-    await agent
-      .set('Authorization', `bearer ${token}`)
+    await api
       .post('/api/blogs')
+      .set('Authorization', `bearer ${token}`)
       .send(newBlog)
       .expect(200)
       .expect('Content-Type', /application\/json/)
@@ -206,9 +205,9 @@ test('a blog can be deleted', async () => {
   
   const token = response.body.token 
 
-  await agent
-    .set('Authorization', `bearer ${token}`)
+  await api
     .delete(`/api/blogs/${blogsAtStart[0].id}`)
+    .set('Authorization', `bearer ${token}`)
     .expect(204)
   const blogsAtEnd = await helper.blogsInDb()
 
@@ -246,9 +245,9 @@ test('if a blog is posted with no title or url the response is status 400', asyn
     likes: 23,
     userId: users[0].id
   }
-  await agent
-    .set('Authorization', `bearer ${token}`)
+  await api
     .post('/api/blogs')
+    .set('Authorization', `bearer ${token}`)
     .send(newBlog)
     .expect(400)
 })
