@@ -1,9 +1,10 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
 const User = require('../models/user')
-const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken')
+const { userExtractor } = require('../utils/middleware')
 
-blogsRouter.get('/', async (request, response) => {
+blogsRouter.get('/', async (request, response, next) => {
 
   // Note difference between async/await syntax...
   const blogs = await Blog.find({}).populate('user', {username : 1, name: 1})
@@ -17,19 +18,10 @@ blogsRouter.get('/', async (request, response) => {
   //   })
 })
 
-blogsRouter.post('/', async (request, response, next) => {
+blogsRouter.post('/', userExtractor, async (request, response, next) => {
   
   const body = request.body
-  const token = request.token
-  if (!token) {
-    return response.status(401).json({error: 'token is null'})
-  }
-  const decodedToken = jwt.verify(token, process.env.SECRET)
-  if (!decodedToken.id) {
-    return response.status(401).json({error: 'token missing or invalid'})
-  }
-
-  const user = await User.findById(decodedToken.id)
+  const user = request.user
   
   const blog = new Blog({
     title: body.title,
@@ -59,23 +51,12 @@ blogsRouter.get('/:id', async (request, response, next) => {
   }
 })
 
-blogsRouter.delete('/:id', async (request, response, next) => {
-  const token = request.token
-  if (!token) {
-    return response.status(401).json({error: 'token is null'})
-  }
-  const decodedToken = jwt.verify(token, process.env.SECRET)
-  if (!decodedToken.id) {
-    return response.status(401).json({error: 'token missing or invalid'})
-  }
+blogsRouter.delete('/:id', userExtractor, async (request, response, next) => {
+  const user = request.user
 
   const blog = await Blog.findById(request.params.id)
   if (!blog) {
     return response.status(400).json({error: 'requested blog to delete does not exist'})
-  }
-  const user = await User.findById(decodedToken.id)
-  if (!user) {
-    return response.status(400).json({error: 'user could not be found matching token in request'})
   }
 
   if (blog.user.toString() === user.id.toString()) {
