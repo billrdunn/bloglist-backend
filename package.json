@@ -7,7 +7,8 @@
     "start": "NODE_ENV=production node index.js",
     "dev": "NODE_ENV=development nodemon index.js",
     "test": "NODE_ENV=test jest --verbose --runInBand",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "start::test": "cross-env NODE_ENV=test node index.js"
   },
   "author": "William Dunn",
   "license": "ISC",
@@ -25,6 +26,7 @@
     "yarn": "^1.22.17"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "eslint": "^8.7.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-import": "^2.25.4",
